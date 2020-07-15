@@ -10,9 +10,7 @@ public class GreetingController {
 	@MessageMapping("/hello")
 	@SendTo("/topic/greetings")
 	public Greeting greeting(HelloMessage message) throws Exception {
-		System.out.println("esperando");
-		Thread.sleep(1000); // simulated delay
-		System.out.println("enviando el saludo");
+		Thread.sleep(1000);
 		return new Greeting("Hello, " + HtmlUtils.htmlEscape(message.getName()) + "!");
 	}
 }

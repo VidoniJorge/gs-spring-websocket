@@ -90,7 +90,35 @@ La representación de nuestro JSON de salida en una clase Java es la siguiente:
 
 Spring usará la biblioteca **Jackson JSON** para reunir automáticamente las instancias del  tipo Greeting en JSON
 
-## Creación de Controller
+## Creación del manejador de mensajes
+Para el enrutamiento de los mensajes **STOMP** nos valdremos de los **@Controller**. Para esto crearemos nuestro controlador llamado **GreetingController**, al cual le indicaremos que acepte los mensajes enviados a **/hello** utilizando la anotación **@MessageMapping** y lo reenviaremos a **/topic/greetings** utilizando la anotación **@SendTo**.
+
+Nuestro controller nos quedara como se muestra a continuación
+
+    package ar.com.jlv.gs.spring.websocket.messaging;
+
+    import org.springframework.messaging.handler.annotation.MessageMapping;
+    import org.springframework.messaging.handler.annotation.SendTo;
+    import org.springframework.stereotype.Controller;
+    import org.springframework.web.util.HtmlUtils;
+
+    @Controller
+    public class GreetingController {
+	    @MessageMapping("/hello")
+	    @SendTo("/topic/greetings")
+	    public Greeting greeting(HelloMessage message) throws Exception {
+		    Thread.sleep(1000);
+		    return new Greeting("Hello, " + HtmlUtils.htmlEscape(message.getName()) + "!");
+	    }
+    }
+
+Entendamos un poco lo que hace esta pequeño controller. 
+
+Lo primero a entender es que mediante la anotación **@MessageMapping** establecemos cual va hacer vuestra fuente de datos **/hello**. La carga útil de esta fuente se mapea con el Objeto **HelloMessage**.
+
+Internamente, el método contiene un sleep generar un pequeño retraso y de esta forma simular el procesamiento de datos. Este pequeño retraso también nos da la posibilidad de probar desde el lado del cliente, que podemos seguir trabajando con total normalidad y cuando el server termine de procesas la información esta nos será enviada y se nos mostrara por pantalla.
+
+Por último, el método crea un Objeto Greeting y lo devuelve. Este Objeto es enviado a todos los suscritores del topic** /topic/Greetings**, el cual fue especificado con la anotación **@SendTo**. 
 
 ## Creación de WebSocket Config
 
