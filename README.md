@@ -1,3 +1,5 @@
+# WebSocket Introducción
+
 El protocolo **WebSocket** [RFC 6455](https://tools.ietf.org/html/rfc6455), proporciona una forma estandarizada de establecer un canal de comunicación **bidireccional full-duplex** entre el cliente y el servidor a través de una única conexión TCP. 
 
 Una interacción de WebSocket comienza con una solicitud HTTP que utiliza el campo **_Upgrade_** del **HEADER HTTP** para actualizar, o en este caso, para cambiar al protocolo WebSocket.
