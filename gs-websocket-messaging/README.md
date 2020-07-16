@@ -122,4 +122,38 @@ Por último, el método crea un Objeto Greeting y lo devuelve. Este Objeto es en
 
 ## Creación de WebSocket Config
 
+Llego el momento de configurar Spring para habilitar la mensajería WebSocket y STOMP.
+
+Para esto crearemos la siguiente clase **WebSocketConfig**:
+
+    package ar.com.jlv.gs.spring.websocket.messaging;
+
+    import org.springframework.context.annotation.Configuration;
+    import org.springframework.messaging.simp.config.MessageBrokerRegistry;
+    import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBroker;
+    import org.springframework.web.socket.config.annotation.StompEndpointRegistry;
+    import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerConfigurer;
+
+    @Configuration
+    @EnableWebSocketMessageBroker
+    public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
+	    @Override
+        public void configureMessageBroker(MessageBrokerRegistry config) {
+            config.enableSimpleBroker("/topic");
+            config.setApplicationDestinationPrefixes("/app");
+        }
+
+        @Override
+        public void registerStompEndpoints(StompEndpointRegistry registry) {
+            registry.addEndpoint("/gs-guide-websocket").withSockJS();
+        }
+    }
+
+Lo primero que se hace en nuestra clase WebSocketConfig es declararla como un componente de configuración a través de la anotación @Configuration y habilitar el manejo de mensajes de WebSocket con la anotación @EnableWebSocketMessageBroker.
+
+Nuestra clase config consta de 2 métodos:
+* **configureMessageBroker**: Es la implementación del método predeterminado para configurar el intermediario de mensajes. Comienza llamando al método **enableSimpleBroker()** para permitir que un simple agente de mensajes basado en memoria lleve los mensajes de saludo a los clientes que estén escuchando el destinos con el prefijo **/topic**. También designamos, con el método **setApplicationDestinationPrefexes()**, el prefijo **/app** para los mensajes de entradas los cuales se leerán con la anotación @MessageMapping. Este prefijo se utilizará para definir todas las asignaciones de mensajes. En nuestro caso **/app/hello**
+* **registerStompEndpoints:** este método registra el **/gs-guide-websocket** como punto final, habilitando las opciones de respaldo de **SockJS** para que se pueda utilizar transportes alternativos si WebSocket no está disponible. El cliente **SockJS** intentara conectarse al punto final **/gs-guide-websocket** y utilizar el mejor trasporte disponible (WebSocket, xhr-streaming, xhr-polling, etc).
+
+
 ## Creación del cliente
