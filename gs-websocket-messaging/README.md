@@ -157,3 +157,161 @@ Nuestra clase config consta de 2 métodos:
 
 
 ## Creación del cliente
+Con las piezas del lado del servidor en su lugar, puede dirigir su atención al cliente de JavaScript que enviará y recibirá mensajes del lado del servidor.
+
+Crearemos el siguiente **index.html**, dentro de src/main/resources/static/index.html.
+
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Hello WebSocket</title>
+        <link href="/webjars/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+        <link href="/main.css" rel="stylesheet">
+        <script src="/webjars/jquery/jquery.min.js"></script>
+        <script src="/webjars/sockjs-client/sockjs.min.js"></script>
+        <script src="/webjars/stomp-websocket/stomp.min.js"></script>
+        <script src="/app.js"></script>
+    </head>
+    <body>
+    <noscript><h2 style="color: #ff0000">Seems your browser doesn't support Javascript! Websocket relies on Javascript being
+        enabled. Please enable
+        Javascript and reload this page!</h2></noscript>
+    <div id="main-content" class="container">
+        <div class="row">
+            <div class="col-md-6">
+                <form class="form-inline">
+                    <div class="form-group">
+                        <label for="connect">WebSocket connection:</label>
+                        <button id="connect" class="btn btn-default" type="submit">Connect</button>
+                        <button id="disconnect" class="btn btn-default" type="submit" disabled="disabled">Disconnect
+                        </button>
+                    </div>
+                </form>
+            </div>
+            <div class="col-md-6">
+                <form class="form-inline">
+                    <div class="form-group">
+                        <label for="name">What is your name?</label>
+                        <input type="text" id="name" class="form-control" placeholder="Your name here...">
+                    </div>
+                    <button id="send" class="btn btn-default" type="submit">Send</button>
+                </form>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-12">
+                <table id="conversation" class="table table-striped">
+                    <thead>
+                    <tr>
+                        <th>Greetings</th>
+                    </tr>
+                    </thead>
+                    <tbody id="greetings">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    </body>
+    </html>
+
+Este archivo HTML importa las bibliotecas **SockJS** y **STOMP** javascript que se utilizarán para comunicarse con nuestro servidor a través de websocket. También importamos app.js, que contiene la lógica de nuestra aplicación cliente. El archivo **app.js** lo tendremos que crear dentro de src/main/resources/static/app.js
+
+    var stompClient = null;
+
+    function setConnected(connected) {
+        $("#connect").prop("disabled", connected);
+        $("#disconnect").prop("disabled", !connected);
+        if (connected) {
+            $("#conversation").show();
+        }
+        else {
+            $("#conversation").hide();
+        }
+        $("#greetings").html("");
+    }
+
+    function connect() {
+        var socket = new SockJS('/gs-guide-websocket');
+        stompClient = Stomp.over(socket);
+        stompClient.connect({}, function (frame) {
+            setConnected(true);
+            console.log('Connected: ' + frame);
+            stompClient.subscribe('/topic/greetings', function (greeting) {
+                showGreeting(JSON.parse(greeting.body).content);
+            });
+        });
+    }
+
+    function disconnect() {
+        if (stompClient !== null) {
+            stompClient.disconnect();
+        }
+        setConnected(false);
+        console.log("Disconnected");
+    }
+
+    function sendName() {
+        stompClient.send("/app/hello", {}, JSON.stringify({'name': $("#name").val()}));
+    }
+
+    function showGreeting(message) {
+        $("#greetings").append("<tr><td>" + message + "</td></tr>");
+    }
+
+    $(function () {
+        $("form").on('submit', function (e) {
+            e.preventDefault();
+        });
+        $( "#connect" ).click(function() { connect(); });
+        $( "#disconnect" ).click(function() { disconnect(); });
+        $( "#send" ).click(function() { sendName(); });
+    });
+
+
+Las piezas principales de este js para comprender son las funciones **connect()** y **sendName()**.
+
+La función **connect()** utiliza las librerías SockjS y stomp para abrir una conexión al punto final **/gs-guide-websocket**. Tras una conexión exitosa el cliente se subscribe al destino **/topic/greeting**, donde el servidor publicara los mensajes. Cuando se reciba un mensaje se agregara un elemento de párrafo al DOM para mostrar el mensaje.
+
+La función **sendName()** recupera el nombre ingresado por el usuario y utiliza el cliente STOMP para enviar un mensaje al destino **/app/hello**.
+
+Por ultimo agregaremos un pequeño css para que nuestro cliente se vea un poco más elegante. El css lo agregamos en la carpeta src/main/resources/static/main.css
+
+    body {
+        background-color: #f5f5f5;
+    }
+
+    #main-content {
+        max-width: 940px;
+        padding: 2em 3em;
+        margin: 0 auto 20px;
+        background-color: #fff;
+        border: 1px solid #e5e5e5;
+        -webkit-border-radius: 5px;
+        -moz-border-radius: 5px;
+        border-radius: 5px;
+    }
+
+## Ejecutar la aplicación
+
+Como toda aplicación creada con Spring Boot para ejecutar nuestra aplicación solo tenemos que correr nuestra clase *Application. La cual identificaremos porque lleva la anotación **@SpringBootApplication**.
+
+### Construir un JAR ejecutable
+Puede ejecutar la aplicación desde la línea de comandos Maven. También puede crear un único archivo JAR ejecutable que contenga todas las dependencias, clases y recursos necesarios y ejecutarlo. La creación de un archivo jar ejecutable facilita el envío, la versión y la implementación del servicio como una aplicación durante todo el ciclo de vida de desarrollo, en diferentes entornos, etc.
+
+Al usar Maven, puede ejecutar la aplicación usando **./mvnw spring-boot:run**. Alternativamente, puede compilar el archivo JAR con **./mvnw clean package** y luego ejecutar el archivo JAR de la siguiente manera:
+
+**java -jar target / gs-messaging-stomp-websocket-0.1.0.jar**
+
+## Prueba el servicio
+Ahora que el servicio se está ejecutando, apunte su navegador a http://localhost:8080 y haga clic en el botón Conectar .
+
+Al abrir una conexión, se le solicita su nombre. Ingrese su nombre y haga clic en Enviar . Su nombre se envía al servidor como un mensaje JSON a través de STOMP. Después de un retraso simulado de un segundo, el servidor envía un mensaje de vuelta con un saludo "Hola" que se muestra en la página. En este punto, puede enviar otro nombre o puede hacer clic en el botón Desconectar para cerrar la conexión.
+
+Una prueba adicional que puede realzar es abrir varios navegadores, conectarse al servidor y ver como se replican los mensajes.
+
+
+
+
+
+
